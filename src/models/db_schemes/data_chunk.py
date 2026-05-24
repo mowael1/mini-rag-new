@@ -13,10 +13,3 @@ class Project(BaseModel):
     
     # project.pyالي موجود في _id والي chunk ده هيكون وصله ما بين ال 
     chunk_project_id: ObjectId
-
-    # project_id علي ال validateده انت عاوز تعمل 
-    @field_validator("project_id")
-    def validate_project_id(cls, value):
-        if not value.isalnum():
-            raise ValueError("project_id must be alphanumeric")
-        return value
