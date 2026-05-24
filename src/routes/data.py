@@ -35,7 +35,7 @@ async def upload_data(project_id: str, file: UploadFile, app_settings: Settings=
     # controllers لوحدها جوه ال function يبقي هحطه في logic وطلما ده 
     # بتاعه project path جوه ال file ده عشان نستعمله في اننا نخزن ال project pathوبعد كده نروح نجيب ال  
     # random ويكن اسم الملف كمان    
-    file_path = DataController().generate_file_path(project_id=project_id, file_name=file)
+    file_path, file_id = DataController().generate_file_path(project_id=project_id, file_name=file)
 
     #  chunk by chunk من خلال انها تكون desk علي ال file دي المسئوله انها تبدا تكتب ال 
     try:
@@ -56,6 +56,7 @@ async def upload_data(project_id: str, file: UploadFile, app_settings: Settings=
         )
     return JSONResponse(
         content={
-            "signal": ResponseSignal.FILE_UPLOAD_SUCCESS.value
+            "signal": ResponseSignal.FILE_UPLOAD_SUCCESS.value,
+            "file_id": file_id
         }
     )

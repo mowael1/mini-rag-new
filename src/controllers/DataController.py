@@ -41,4 +41,4 @@ class DataController(BaseController):
             random_key
         )
         
-        return file_path
+        return file_path , random_key
