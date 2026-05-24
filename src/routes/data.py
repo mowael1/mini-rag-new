@@ -91,5 +91,13 @@ async def process_endpoint(project_id: str, process_request: ProcessRequest):
                 "singal": ResponseSignal.PROCESSING_FAILED.value
             }
         )
-        
-    return file_chunks
+
+    cleaned_chunks = [
+    {
+        "page_content": chunk.page_content,
+        "metadata": chunk.metadata
+    }
+    for chunk in file_chunks
+    ]
+    
+    return cleaned_chunks
