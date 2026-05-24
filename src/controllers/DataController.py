@@ -30,7 +30,7 @@ class DataController(BaseController):
         
         # unique file name ده كده انت عملت 
         original_name = file_name.filename          # → "document.pdf"
-        extension = os.path.splitext(original_name)[1]  # → ".pdf"
+        extension = os.path.splitext(original_name)[-1]  # → ".pdf"
         random_key = str(uuid.uuid4()).replace("-", "") + extension
         
         
