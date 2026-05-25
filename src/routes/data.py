@@ -11,7 +11,6 @@ from src.models.ProjectModel import ProjectModel
 from src.models.ChunkModel import ChunkModel
 from src.models.db_schemes.data_chunk import DataChunk
 
-
 logger = logging.getLogger("uvicorn.error")
 
 data_router = APIRouter(
@@ -29,7 +28,6 @@ async def upload_data(request: Request, project_id: str, file: UploadFile, app_s
     
     project = await project_model.get_project_or_create_one(project_id=project_id)
     #========================================================#
-    
     
     # validate the file properties
     # DataController فاحنا هنفصله في حته لوحدها والي هيكون موجود في logic وطلما ده 
@@ -122,7 +120,6 @@ async def process_endpoint(request: Request, project_id: str, process_request: P
     ]
     
     #========================================================#
-    
     # mongo في ال chunks الخاصه بانها تضفلي ال 
     chunk_model = ChunkModel(db_client=request.app.db_client)
     
