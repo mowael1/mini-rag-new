@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, Depends, status
+from fastapi import APIRouter, UploadFile, Depends, status, Request
 from fastapi.responses import JSONResponse
 from src.helpers.config import Settings , get_settings
 from src.controllers.DataController import DataController
@@ -7,6 +7,9 @@ import aiofiles
 from src.models.enums.ResponseEnum import ResponseSignal
 import logging
 from src.routes.schemas.data import ProcessRequest
+from src.models.ProjectModel import ProjectModel
+from src.models.ChunkModel import ChunkModel
+from src.models.db_schemes.data_chunk import DataChunk
 
 
 logger = logging.getLogger("uvicorn.error")
@@ -18,7 +21,14 @@ data_router = APIRouter(
 
 # deskالي هترفعه وتبدا انها تخرنه علي ال file دي المسئوله عن انها تستقبل ال 
 @data_router.post("/upload/{project_id}")
-async def upload_data(project_id: str, file: UploadFile, app_settings: Settings= Depends(get_settings)):
+async def upload_data(request: Request, project_id: str, file: UploadFile, app_settings: Settings= Depends(get_settings)):
+    
+    #========================================================#
+    # mongo في ال projectدي الخاصه بانها تضفلي ال 
+    project_model = ProjectModel(db_client=request.app.db_client)
+    
+    project = await project_model.get_project_or_create_one(project_id=project_id)
+    #========================================================#
     
     
     # validate the file properties
@@ -62,7 +72,8 @@ async def upload_data(project_id: str, file: UploadFile, app_settings: Settings=
     return JSONResponse(
         content={
             "signal": ResponseSignal.FILE_UPLOAD_SUCCESS.value,
-            "file_id": file_id
+            "file_id": file_id,
+            "project_id": str(project.id)
         }
     )
     
@@ -72,11 +83,19 @@ async def upload_data(project_id: str, file: UploadFile, app_settings: Settings=
 # ProcessRequest الي بيتجي دي بتكون موجوده في data وشكل ال 
 # process_request وانا بستقبلها في ال 
 @data_router.post("/process/{project_id}")
-async def process_endpoint(project_id: str, process_request: ProcessRequest):
+async def process_endpoint(request: Request, project_id: str, process_request: ProcessRequest):
 
     file_id = process_request.file_id
     chunk_size = process_request.chunk_size
     overlap_size = process_request.overlap_size
+    do_reset = process_request.do_reset
+    #========================================================#
+    # mongo في ال projectدي الخاصه بانها تضفلي ال 
+    project_model = ProjectModel(db_client=request.app.db_client)
+    
+    project = await project_model.get_project_or_create_one(project_id=project_id)
+    
+    #========================================================#
 
     file_chunks = ProcessController(project_id=project_id).process_file_content(
         file_id= file_id,
@@ -92,12 +111,30 @@ async def process_endpoint(project_id: str, process_request: ProcessRequest):
             }
         )
 
-    cleaned_chunks = [
-    {
-        "page_content": chunk.page_content,
-        "metadata": chunk.metadata
-    }
-    for chunk in file_chunks
+    file_chunks_records = [
+        DataChunk(
+            chunk_text= chunk.page_content,
+            chunk_metadata= chunk.metadata,
+            chunk_order= i+1,
+            chunk_project_id=project.id,
+        )
+        for i, chunk in enumerate(file_chunks)
     ]
     
-    return cleaned_chunks
+    #========================================================#
+    
+    # mongo في ال chunks الخاصه بانها تضفلي ال 
+    chunk_model = ChunkModel(db_client=request.app.db_client)
+    
+    if do_reset == 1:
+        _ = await chunk_model.delete_chunks_by_project_id(project_id=project.id)
+        
+    no_records = await chunk_model.insert_many_chunks(file_chunks_records)
+    
+    return JSONResponse(
+        content={
+            "signal": ResponseSignal.PROCESSING_SUCCESS.value,
+            "inserted_chunks": no_records
+        }
+    )
+    #========================================================#

@@ -9,7 +9,7 @@ from bson.objectid import ObjectId
 class Project(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     
-    _id: Optional[ObjectId] = None
+    id: Optional[ObjectId] = Field(None,alias="_id")
     project_id: str = Field(..., min_length=1)
 
     # project_id علي ال validateده انت عاوز تعمل 

@@ -11,7 +11,7 @@ settings = get_settings()
 async def lifespan(app: FastAPI):
     # ← startup هنا
     app.mongo_client = AsyncIOMotorClient(settings.MONGODB_URL)
-    app.db = app.mongo_client[settings.MONGODB_DATABASE]
+    app.db_client = app.mongo_client[settings.MONGODB_DATABASE]
     
     yield  # ← التطبيق شغال هنا
     
