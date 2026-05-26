@@ -9,6 +9,31 @@ class ProjectModel(BaseDataModel):
         
         self.collection = self.db_client[DataBaseEnum.COLLECTION_PROJECT_NAME.value]
         
+        
+    #==========================================================#
+    # indexing هنا بقي هنبدا اننا نضيف ال 
+
+    # indexes الي هتضيف لينا ال function فاول حاجه احنا عملنا ال 
+    # ده collection وهنبقي عاوزين اننا نستدعيها اول ما ننشا ال 
+    async def init_collection(self):
+        indexes = Project.get_indexs()
+        for index in indexes:
+            await self.collection.create_index(
+                index["key"],
+                name=index["name"],
+                unique=index["unique"]
+            )
+            
+    # ده collection دي بقي الي انت هتستعملها عشان تعمل ال 
+    # فعملنا دي كحاجه وسيطه __init__ مينفعش اننا نضيفها جوه ال async function ودي عملناها لان ال 
+    @classmethod
+    async def create_instance(cls, db_client: object):
+        instance = cls(db_client)
+        await instance.init_collection()
+        
+        return instance
+    #==========================================================#
+        
     
     # monogdb الي هيجيلك في ال file ده كده انت هتحط ال 
     # await يكون insert وال async تكون function يبقي لازم ال motor وطلما انت بتتعامل مع ال 

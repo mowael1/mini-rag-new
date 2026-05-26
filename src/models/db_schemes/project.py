@@ -18,3 +18,20 @@ class Project(BaseModel):
         if not value.isalnum():
             raise ValueError("project_id must be alphanumeric")
         return value
+    
+    # نفسه model والي هنبدا اننا نطبقها في ال indexing فيبقي هي دي الحاجات الي احنا هنعمل عليها 
+    @classmethod
+    def get_indexs(cls):
+        
+        return [
+            {
+                # indexing دي الحاجات الي هنعمل عليها 
+                "key": [
+                    ("project_id", 1)
+                ],
+                # indexing ده الاسم الي هيكون بتاع ال 
+                "name": "project_id_index_1",
+                # ولا لا unique ودي انت بتقوله هل انت هتكون قيمه 
+                "unique": True
+            }
+        ]

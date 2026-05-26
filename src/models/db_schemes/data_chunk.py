@@ -13,3 +13,21 @@ class DataChunk(BaseModel):
     
     # project.pyالي موجود في _id والي chunk ده هيكون وصله ما بين ال 
     chunk_project_id: ObjectId
+
+        # نفسه model والي هنبدا اننا نطبقها في ال indexing فيبقي هي دي الحاجات الي احنا هنعمل عليها 
+    @classmethod
+    def get_indexs(cls):
+        
+        return [
+            {
+                # indexing دي الحاجات الي هنعمل عليها 
+                # وهنعمله تصاعدي
+                "key": [
+                    ("chunk_project_id", 1)
+                ],
+                # indexing ده الاسم الي هيكون بتاع ال 
+                "name": "chunk_project_id_index_1",
+                # ولا لا unique ودي انت بتقوله هل انت هتكون قيمه 
+                "unique": False
+            }
+        ]
