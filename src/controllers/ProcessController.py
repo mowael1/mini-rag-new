@@ -20,19 +20,20 @@ class ProcessController(BaseController):
         
     # بناءا علي نوع الملفloader دي الي هتبجلي ال 
     def get_file_loader(self, file_id: str):
-        
+    
         file_ext = self.get_file_extension(file_id=file_id)
         file_path = os.path.join(
             self.project_path,
             file_id
         )
         
+        if not os.path.exists(file_path):
+            return None
+        
         if file_ext == ProcessEnum.TXT.value:
-            
             return TextLoader(file_path=file_path)
         
         if file_ext == ProcessEnum.PDF.value:
-        
             return PyMuPDFLoader(file_path=file_path)
         
         return None
@@ -42,7 +43,10 @@ class ProcessController(BaseController):
         
         loader = self.get_file_loader(file_id=file_id)
         
-        return loader.load()
+        if loader:
+            return loader.load()
+        else:
+            return None
     
     
     # page_content , metadataفكل واحد بيكون فيها ال chunks الي content دي المسئوله انها تقطع ال 

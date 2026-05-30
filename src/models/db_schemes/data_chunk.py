@@ -13,6 +13,8 @@ class DataChunk(BaseModel):
     
     # project.pyالي موجود في _id والي chunk ده هيكون وصله ما بين ال 
     chunk_project_id: ObjectId
+    
+    chunk_asset_id: ObjectId
 
         # نفسه model والي هنبدا اننا نطبقها في ال indexing فيبقي هي دي الحاجات الي احنا هنعمل عليها 
     @classmethod
