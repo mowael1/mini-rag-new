@@ -1,7 +1,7 @@
 from enum import Enum
 from stores.llm.LLMInterface import LLMInterface
-from stores.providers.OpenAIProvider import OpenAIProvider
-from stores.providers.CoHereProvider import CoHereProvider
+from stores.llm.providers.OpenAIProvider import OpenAIProvider
+from stores.llm.providers.CoHereProvider import CoHereProvider
 from llm.LLMEnums import LLMEnums
 
 class LLMProviderFactory:
