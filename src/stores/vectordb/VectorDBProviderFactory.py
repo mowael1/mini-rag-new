@@ -2,7 +2,7 @@ from .providers.QdrantDBProvider import QdrantDBProvider
 from ..vectordb.VectorDBEnums import VectorDBType
 from src.controllers.BaseController import BaseController
 
-class LLMProviderFactory:
+class VectorDBProviderFactory:
     
     def __init__(self, config: dict):
         self.config = config
