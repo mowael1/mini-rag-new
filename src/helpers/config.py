@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     MONGODB_URL: str
     MONGODB_DATABASE:str
     
-        # ====================== LLM Config ======================
+    # ====================== LLM Config ======================
     GENERATION_BACKEND: str
     EMBEDDING_BACKEND: str
 
@@ -28,6 +28,12 @@ class Settings(BaseSettings):
     default_input_max_char: int
     default_generation_max_output_tokens: int
     defult_generation_temperature: float
+    
+    # ====================== Vector DB Config ======================
+    VECTOR_DB_BACKEND: str
+    VECTOR_DB_PATH: str
+    VECTOR_DB_DISTANCE_METHOD: str
+
     # الي فوق دي values ده الملف الي هيجيب منه ال 
     class Config:
         env_file = "src\.env"

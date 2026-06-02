@@ -26,12 +26,12 @@ class VectorDBInterface(ABC):
         pass
     
     @abstractmethod
-    def create_collection(self, collection_name: str,
-                        embedding_size: int, do_reset: bool = False):
+    def delete_collection(self, collection_name: str):
         pass
     
     @abstractmethod
-    def delete_collection(self, collection_name: str):
+    def create_collection(self, collection_name: str,
+                        embedding_size: int, do_reset: bool = False):
         pass
     
     # مش بيفرقوا عن بعضinsert one , insert many هنا ال 
@@ -47,9 +47,9 @@ class VectorDBInterface(ABC):
     # 10,000 مه واحده عشان اخزنهم وليكن vectors بس عشان لو هو اداني مجموعه كبيره من ال 
     # احفظها وبعد كده اروح علي الي بعدها batch عشان كل batches فلا انا لازم اقسمهم الاول ك 
     @abstractmethod
-    def insert_one(self, collection_name: str, text: list, vector: list,
+    def insert_many(self, collection_name: str, texts: list, vector: list,
                     metadata: list = None,
-                    record_id: list = None, batch_size: int = 50):
+                    record_ids: list = None, batch_size: int = 50):
         pass
     
     @abstractmethod
