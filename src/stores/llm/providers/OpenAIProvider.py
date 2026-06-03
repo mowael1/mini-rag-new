@@ -15,14 +15,14 @@ class OpenAIProvider(LLMInterface):
     def __init__(self, api_key: str, api_url: str= None,
                 default_input_max_char: int= 1000,
                 default_generation_max_output_tokens: int= 1000,
-                defult_generation_temperature: float = .1):
+                default_generation_temperature: float = .1):
         
         self.api_key = api_key
         self.api_url = api_url
         
         self.default_input_max_char = default_input_max_char
         self.default_generation_max_output_tokens = default_generation_max_output_tokens
-        self.defult_generation_temperature = defult_generation_temperature
+        self.default_generation_temperature = default_generation_temperature
         
         # embedding , generationدلوقتي والي هما ال two tasks في openai هستعمل ال 
         # vector databaseلاننا هنبقي محتاجينه في ال embedding size لازم اخد كمان ال embedding ومع ال 
@@ -33,7 +33,7 @@ class OpenAIProvider(LLMInterface):
         # client لازم انك تعرف openai عشان تبدا تتعامل مع 
         self.client = OpenAI(
             api_key= self.api_key,
-            api_url= self.api_url,
+            base_url= self.api_url,
         )
         
         # loggingمنه يبدا انه يكون عندنا معملومات في ال object ده عشان كلما ناخد class في ال logger هنعمل 
