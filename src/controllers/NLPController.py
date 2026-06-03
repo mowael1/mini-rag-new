@@ -11,8 +11,6 @@ class NLPController(BaseController):
         # vectors الي هيحولها ل embedding model وال 
         # في انه يطلع الاجابه LLM عشان هستعمل ال generation model وال 
         
-        # تعديل
-        
         self.vectordb_client = vectordb_client
         self.generation_client = generation_client
         self.embedding_client = embedding_client
