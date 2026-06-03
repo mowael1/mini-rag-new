@@ -3,9 +3,8 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     
     APP_NAME: str
-    APP_NAME: str
+    
     APP_VERSION: str
-    OPENAI_API_KEY: str
     FILE_ALLOWED_TYPES: list
     FILE_MAX_SIZE: int
     FILE_DEFAULT_CHUNK_SIZE: int
@@ -27,7 +26,7 @@ class Settings(BaseSettings):
     
     default_input_max_char: int
     default_generation_max_output_tokens: int
-    defult_generation_temperature: float
+    default_generation_temperature: float
     
     # ====================== Vector DB Config ======================
     VECTOR_DB_BACKEND: str

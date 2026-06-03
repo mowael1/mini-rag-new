@@ -1,6 +1,7 @@
 from qdrant_client import models, QdrantClient
 from ..VectorDBInterface import VectorDBInterface
 from ..VectorDBEnums import DistanceMethodEnums
+from uuid import uuid4
 import logging
 
 class QdrantDBProvider(VectorDBInterface):
@@ -17,10 +18,10 @@ class QdrantDBProvider(VectorDBInterface):
         self.client = None
         
         if distance_method == DistanceMethodEnums.COSINE.value :
-            distance_method = models.Distance.COSINE
+            self.distance_method = models.Distance.COSINE
             
         elif distance_method == DistanceMethodEnums.DOT.value :
-            distance_method = models.Distance.DOT
+            self.distance_method = models.Distance.DOT
             
         self.logger = logging.getLogger(__name__)
         
@@ -76,6 +77,7 @@ class QdrantDBProvider(VectorDBInterface):
             collection_name=collection_name,
             points= [
                 models.PointStruct(
+                    id=str(uuid4()),
                     vector = vector,
                     payload= {
                         "text": text,
@@ -104,6 +106,7 @@ class QdrantDBProvider(VectorDBInterface):
         for text, vector, meta in zip(texts,vectors,metadata):
             points.append(
                 models.PointStruct(
+                    id=str(uuid4()),
                     vector=vector,
                     payload={
                         "text": text,

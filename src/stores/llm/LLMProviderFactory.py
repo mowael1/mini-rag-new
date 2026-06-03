@@ -1,8 +1,8 @@
 from enum import Enum
-from stores.llm.LLMInterface import LLMInterface
-from stores.llm.providers.OpenAIProvider import OpenAIProvider
-from stores.llm.providers.CoHereProvider import CoHereProvider
-from llm.LLMEnums import LLMEnums
+from src.stores.llm.LLMInterface import LLMInterface
+from src.stores.llm.providers.OpenAIProvider import OpenAIProvider
+from src.stores.llm.providers.CoHereProvider import CoHereProvider
+from src.stores.llm.LLMEnums import LLMEnums
 
 class LLMProviderFactory:
     
@@ -18,7 +18,7 @@ class LLMProviderFactory:
                 api_url = self.config.OPENAI_API_URL,
                 default_input_max_char = self.config.default_input_max_char,
                 default_generation_max_output_tokens = self.config.default_generation_max_output_tokens,
-                defult_generation_temperature = self.config.defult_generation_temperature,
+                default_generation_temperature = self.config.default_generation_temperature
             )
         
         if provider == LLMEnums.COHERE.value:

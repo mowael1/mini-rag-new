@@ -8,13 +8,13 @@ class CoHereProvider(LLMInterface):
     def __init__(self, api_key: str,
                 default_input_max_char: int= 1000,
                 default_generation_max_output_tokens: int= 1000,
-                defult_generation_temperature: float = .1):
+                default_generation_temperature: float = .1):
         
         self.api_key = api_key
         
         self.default_input_max_char = default_input_max_char
         self.default_generation_max_output_tokens = default_generation_max_output_tokens
-        self.defult_generation_temperature = defult_generation_temperature
+        self.default_generation_temperature = default_generation_temperature
         
         self.generation_model_id = None
         self.embedding_model_id = None
@@ -97,3 +97,33 @@ class CoHereProvider(LLMInterface):
             return None
         
         return response.embeddings.float[0]
+    
+
+    # def embed_many(self, texts: list[str], document_type: str = None):
+        
+    #     if not self.client:
+    #         self.logger.error("Cohere client was not set")
+    #         return None
+        
+    #     if not self.embedding_model_id:
+    #         self.logger.error("Embedding model for Cohere was not set")
+    #         return None
+
+    #     input_type = None
+    #     if document_type == DocumentTypeEnum.DOCUMENT.value:
+    #         input_type = CoHereEnums.DOCUMENT.value
+    #     elif document_type == DocumentTypeEnum.QUERY.value:
+    #         input_type = CoHereEnums.QUERY.value
+
+    #     response = self.client.embed(
+    #         model=self.embedding_model_id,
+    #         texts=[self.process_text(text) for text in texts],  # ← كل الـ texts دفعة واحدة
+    #         input_type=input_type,
+    #         embedding_types=["float"]
+    #     )
+
+    #     if not response or not response.embeddings or not response.embeddings.float or len(response.embeddings.float) == 0:
+    #         self.logger.error("Error while embedding texts with Cohere")
+    #         return None
+
+    #     return response.embeddings.float  # ← بترجع list مش واحدة بس
