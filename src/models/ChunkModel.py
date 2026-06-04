@@ -82,7 +82,7 @@ class ChunkModel(BaseDataModel):
         }).skip(
             (page_no - 1) * page_size
         ).limit(page_size).to_list(length = page_size)
-        
+                
         return [
             DataChunk(**record)
             for record in records

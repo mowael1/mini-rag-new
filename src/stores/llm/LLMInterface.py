@@ -28,8 +28,10 @@ class LLMInterface(ABC):
     def construct_prompt(self, prompt: str, role: str):
         pass
 
+    # call بيروح ب text كان بيروح كل cohere ل text عشان لما كنا بنبعت ال embed_many دي غيرناها ل 
+    # الي انت عاوزخ وتبعته مره واحده text كتيره جدا فقالك انت بتجمع كل ال calls فكده انا طلبت 
     @abstractmethod
     def embed_text(self, text: str, document_type: str= None):
 
         pass
-    
+

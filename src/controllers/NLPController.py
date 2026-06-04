@@ -34,10 +34,7 @@ class NLPController(BaseController):
         # step1: get collection name
         collection_name = self.create_collection_name(project_id=project.project_id)
         
-        print(collection_name)
-        
         # step2: mange items of chunks
-        # texts = [c.chunk_text for c in chunks]
         metadata = [c.chunk_metadata for c in chunks]
         
         texts = [chunk.chunk_text for chunk in chunks]
@@ -47,6 +44,9 @@ class NLPController(BaseController):
             document_type=DocumentTypeEnum.DOCUMENT.value
         )
 
+        # لما بتخلص بيروح يضيف الي بعدهمchunks دي بتدل علي ان ال 
+        print(f"all vectors: {len(vectors)}")
+        
         # step3: create collection if not exists
         is_collection_created = self.vectordb_client.create_collection(collection_name=collection_name,
                                                     embedding_size = self.embedding_client.embedding_size,

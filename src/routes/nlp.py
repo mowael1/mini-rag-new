@@ -47,6 +47,10 @@ async def index_project(request: Request,project_id: str, push_request: PushRequ
     page_no = 1
     inserted_items_count = 0
     
+    # do_reset هيمسح الي قبلهم بسبب ال loop دي انا الي ضايفها لانه لما هيدخل كل مره في ال 
+    is_first_page = True
+    
+    # pages_chunks كلها مره واحد ولكن هنرجع chunks هنا احن مش هنبعت ال 
     while has_records:
         
         page_chunks = await chunk_model.get_project_chunks(project_id=project.id, page_no=page_no)
@@ -61,8 +65,11 @@ async def index_project(request: Request,project_id: str, push_request: PushRequ
         is_inserted = nlp_controller.index_into_vector_db(
             project=project,
             chunks= page_chunks,
-            do_reset=push_request.do_reset
+            do_reset=(push_request.do_reset and is_first_page)  # ← reset في أول مرة بس
+
         )
+        
+        is_first_page = False 
                 
         if not is_inserted:
             return JSONResponse(
