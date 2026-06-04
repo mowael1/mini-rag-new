@@ -49,7 +49,7 @@ class CoHereProvider(LLMInterface):
             return None
         
         max_output_tokens = max_output_tokens or self.default_generation_max_output_tokens
-        temperature = temperature or self.defult_generation_temperature
+        temperature = temperature or self.default_generation_temperature
         
         chat_history.append(self.construct_prompt(prompt=prompt, role=CoHereEnums.USER.value))
         
@@ -99,31 +99,31 @@ class CoHereProvider(LLMInterface):
         return response.embeddings.float[0]
     
 
-    # def embed_many(self, texts: list[str], document_type: str = None):
+    def embed_many(self, texts: list[str], document_type: str = None):
         
-    #     if not self.client:
-    #         self.logger.error("Cohere client was not set")
-    #         return None
+        if not self.client:
+            self.logger.error("Cohere client was not set")
+            return None
         
-    #     if not self.embedding_model_id:
-    #         self.logger.error("Embedding model for Cohere was not set")
-    #         return None
+        if not self.embedding_model_id:
+            self.logger.error("Embedding model for Cohere was not set")
+            return None
 
-    #     input_type = None
-    #     if document_type == DocumentTypeEnum.DOCUMENT.value:
-    #         input_type = CoHereEnums.DOCUMENT.value
-    #     elif document_type == DocumentTypeEnum.QUERY.value:
-    #         input_type = CoHereEnums.QUERY.value
+        input_type = None
+        if document_type == DocumentTypeEnum.DOCUMENT.value:
+            input_type = CoHereEnums.DOCUMENT.value
+        elif document_type == DocumentTypeEnum.QUERY.value:
+            input_type = CoHereEnums.QUERY.value
 
-    #     response = self.client.embed(
-    #         model=self.embedding_model_id,
-    #         texts=[self.process_text(text) for text in texts],  # ← كل الـ texts دفعة واحدة
-    #         input_type=input_type,
-    #         embedding_types=["float"]
-    #     )
+        response = self.client.embed(
+            model=self.embedding_model_id,
+            texts=[self.process_text(text) for text in texts],  # ← كل الـ texts دفعة واحدة
+            input_type=input_type,
+            embedding_types=["float"]
+        )
 
-    #     if not response or not response.embeddings or not response.embeddings.float or len(response.embeddings.float) == 0:
-    #         self.logger.error("Error while embedding texts with Cohere")
-    #         return None
+        if not response or not response.embeddings or not response.embeddings.float or len(response.embeddings.float) == 0:
+            self.logger.error("Error while embedding texts with Cohere")
+            return None
 
-    #     return response.embeddings.float  # ← بترجع list مش واحدة بس
+        return response.embeddings.float  # ← بترجع list مش واحدة بس
