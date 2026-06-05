@@ -29,8 +29,9 @@ class NLPController(BaseController):
         
         return collection_info
     
-    def index_into_vector_db(self, project: Project, chunks: list[DataChunk], do_reset: bool = False):
-        
+    def index_into_vector_db(self, project: Project, chunks: list[DataChunk],chunk_ids: list[int], do_reset: bool = False):
+        print(f"do_reset value: {do_reset}")  # ← تأكد إنه True
+
         # step1: get collection name
         collection_name = self.create_collection_name(project_id=project.project_id)
         
@@ -55,6 +56,31 @@ class NLPController(BaseController):
         #step4: insert into vector db
         _ = self.vectordb_client.insert_many(collection_name = collection_name,texts = texts,
                                             vectors= vectors,
+                                            record_ids = chunk_ids,
                                             metadata = metadata)
         
         return True
+    
+    def search_vector_db_collection(self, project: Project, text: str, limit: int = 10):
+        
+        #step1: get collection name
+        collection_name =  self.create_collection_name(project_id=project.project_id)
+        
+        # step2: get text embedding vector
+        vector = self.embedding_client.embed_text(text= text,
+                                                document_type=DocumentTypeEnum.QUERY.value)
+        
+        if not vector or len(vector) == 0:
+            return False
+        
+        #step3: do semantic search
+        results= self.vectordb_client.search_by_vector(
+            collection_name= collection_name,
+            vector= vector,
+            limit = limit
+        )
+        
+        if not results:
+            return False
+        
+        return results

@@ -47,7 +47,11 @@ class QdrantDBProvider(VectorDBInterface):
             self.logger.warning(f"Collection {collection_name} does not exist")
             return False
         
-        return self.client.delete_collection(collection_name=collection_name)
+        result = self.client.delete_collection(collection_name=collection_name)
+        print(f"Delete result: {result}")  # ← المفروض يطبع True
+        
+        # تأكد إنها اتمسحت فعلاً
+        print(f"Collection still exists after delete: {self.is_collection_existed(collection_name=collection_name)}")
     
     def create_collection(self, collection_name: str,
                     embedding_size: int, do_reset: bool = False):
@@ -77,7 +81,7 @@ class QdrantDBProvider(VectorDBInterface):
             collection_name=collection_name,
             points= [
                 models.PointStruct(
-                    id=str(uuid4()),
+                    id=[record_id],
                     vector = vector,
                     payload= {
                         "text": text,
@@ -103,10 +107,10 @@ class QdrantDBProvider(VectorDBInterface):
         
         points = []
         
-        for text, vector, meta in zip(texts,vectors,metadata):
+        for text, vector, meta,record_id in zip(texts,vectors,metadata,record_ids):
             points.append(
                 models.PointStruct(
-                    id=str(uuid4()),
+                    id=record_id,
                     vector=vector,
                     payload={
                         "text": text,
