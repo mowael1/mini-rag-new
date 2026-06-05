@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from ...models.db_schemes.data_chunk import RetrieveDocument
 
 class VectorDBInterface(ABC):
     
@@ -54,6 +55,6 @@ class VectorDBInterface(ABC):
     
     @abstractmethod
     def search_by_vector(self, collection_name: str,
-                            vector: list[float], limit: int = 5):
+                            vector: list[float], limit: int = 5) -> list[RetrieveDocument]:
         """البحث بالـ vector"""
         pass
