@@ -42,6 +42,8 @@ class OpenAIProvider(LLMInterface):
         # الي هو موجود فيه file كده هو هاخد اسم ال 
         self.logger = logging.getLogger(__name__)
         
+        self.enums = OpenAIEnums
+        
         
     # بتاعها logic ونحط ال interface الي موجوده في ال functions هنبدا بقي دلوقتي نجيب ال 
     # instructor تحطه في model_id ودي كل الي هتعملوا دلوقتي انها هتاخد ال 
@@ -66,6 +68,8 @@ class OpenAIProvider(LLMInterface):
 
     def generate_text(self, prompt: str,chat_history: list = [], max_output_tokens: int = None, temperature: float= None):
         
+        chat_history = chat_history.copy() if chat_history else []  # ✅ copy عشان منعدلش الأصلي
+
     # موجود ولا لاclient لازم الاول تشيك هل ال 
         if not self.client:
             self.logger.error("OpenAI was not set")
@@ -77,15 +81,15 @@ class OpenAIProvider(LLMInterface):
             return None
         
         max_output_tokens = max_output_tokens or self.default_generation_max_output_tokens
-        temperature = temperature or self.defult_generation_temperature
+        temperature = temperature or self.default_generation_temperature
         
         # LLM بتاع ال API دي كلها بعد كده ونبعتها ل list الي هناخد ال user هتكون هي الرساله بتاعت ال chat_history وان اخر رساله في ال 
         chat_history.append(self.construct_prompt(prompt=prompt, role=OpenAIEnums.USER.value))
         
         response = self.client.chat.completions.create(
-            model=self.embedding_model_id,
+            model=self.generation_model_id,
             messages=chat_history,
-            max_tokens=self.max_output_tokens,
+            # max_tokens=self.max_output_tokens,
             temperature=temperature)
         
         # الي راجع ده هل هو مضبوط ولا فيه مشاكلresponse بعد كده لازم اشيك علي ال 
@@ -94,7 +98,7 @@ class OpenAIProvider(LLMInterface):
             self.logger.error("Error while generating text with OpenAI")
             return None
         
-        return response.choices[0].message["content"]
+        return response.choices[0].message.content
 
     
     def embed_text(self, text: str, document_type: str= None):

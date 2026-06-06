@@ -5,6 +5,7 @@ from src.helpers.config import get_settings
 from contextlib import asynccontextmanager
 from src.stores.llm.LLMProviderFactory import LLMProviderFactory
 from src.stores.vectordb.VectorDBProviderFactory import VectorDBProviderFactory
+from src.stores.llm.templates.template_parser import TemplateParser
 
 settings = get_settings()
 
@@ -35,6 +36,12 @@ async def lifespan(app: FastAPI):
     # connect بعد كده نعمل 
     app.vectordb_client.connect()
     
+    
+    # Template هنبدا بقي اننا نحط ال 
+    app.template_parser = TemplateParser(
+        language=settings.PRIMARY_LANG,
+        default_language=settings.DEFAULT_LANG
+    ) 
     yield  # ← التطبيق شغال هنا
     
     # ← shutdown هنا
