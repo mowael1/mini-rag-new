@@ -7,14 +7,33 @@ from src.stores.llm.LLMProviderFactory import LLMProviderFactory
 from src.stores.vectordb.VectorDBProviderFactory import VectorDBProviderFactory
 from src.stores.llm.templates.template_parser import TemplateParser
 
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker
+
 settings = get_settings()
 
 # دي هي دورت حياه التطبيقfunction ان ال python ده بيعرف ال decorator الي 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # ← startup هنا
-    app.mongo_client = AsyncIOMotorClient(settings.MONGODB_URL)
-    app.db_client = app.mongo_client[settings.MONGODB_DATABASE]
+    
+    # mongodb دول كانوا بتوع ال 
+    
+    # Mongodb serverده الاتصال الفعلي ب 
+    # app.mongo_client = AsyncIOMotorClient(settings.MONGODB_URL)
+    # معينه database هنا بقي انت عاوز تتعامل مع 
+    # app.db_client = app.mongo_client[settings.MONGODB_DATABASE]
+    
+    postgres_conn = f"postgresql+asyncpg://{settings.POSTGRES_USERNAME}:{settings.POSTGRES_PASSWORD}@{settings.POSTGRES_HOST}:{settings.POSTGRES_PORT}/{settings.POSTGRES_MAIN_DATABASE}"
+    
+    # database مع ال connection والي مسئول عن engine ده ال 
+    app.db_engine = create_async_engine(postgres_conn, echo=True)
+
+    async_session = sessionmaker(
+    bind=app.db_engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+)
     
     # LLM factory هنا احنا عرفنا ال 
     LLM_provider_factory = LLMProviderFactory(config=settings)
@@ -45,7 +64,9 @@ async def lifespan(app: FastAPI):
     yield  # ← التطبيق شغال هنا
     
     # ← shutdown هنا
-    app.mongo_client.close()
+    # app.mongo_client.close()
+    
+    app.db_engine.dispose()
     app.vectordb_client.disconnect()
     
 
