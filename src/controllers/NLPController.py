@@ -1,6 +1,5 @@
 from .BaseController import BaseController
-from ..models.db_schemes.project import Project
-from ..models.db_schemes.data_chunk import DataChunk
+from ..models.db_schemes import Project,DataChunk
 from ..stores.llm.LLMEnums import DocumentTypeEnum
 
 class NLPController(BaseController):

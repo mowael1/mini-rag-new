@@ -1,89 +1,65 @@
 from src.models.BaseDataModel import BaseDataModel
-from src.models.db_schemes.data_chunk import DataChunk
+from src.models.db_schemes import DataChunk
 from src.models.enums.DataBaseEnum import DataBaseEnum
 from bson.objectid import ObjectId
 from pymongo import InsertOne
+from sqlalchemy import select, func,delete
 
 class ChunkModel(BaseDataModel):
     
     def __init__(self, db_client):
         super().__init__(db_client = db_client)
-        self.collection = self.db_client[DataBaseEnum.COLLECTION_CHUNK_NAME.value]
+        self.db_client = db_client
         
-    #==========================================================#
-    # indexing هنا بقي هنبدا اننا نضيف ال 
-
-    # indexes الي هتضيف لينا ال function فاول حاجه احنا عملنا ال 
-    # ده collection وهنبقي عاوزين اننا نستدعيها اول ما ننشا ال 
-    async def init_collection(self):
-        indexes = DataChunk.get_indexs()
-        for index in indexes:
-            await self.collection.create_index(
-                index["key"],
-                name=index["name"],
-                unique=index["unique"]
-            )
-            
-    # ده collection دي بقي الي انت هتستعملها عشان تعمل ال 
-    # فعملنا دي كحاجه وسيطه __init__ مينفعش اننا نضيفها جوه ال async function ودي عملناها لان ال 
+    #==========================================================#            
     @classmethod
     async def create_instance(cls, db_client: object):
-        instance = cls(db_client)
-        await instance.init_collection()
-        
+        instance = cls(db_client)        
         return instance
     #==========================================================#
         
     async def create_chunk(self, chunk: DataChunk):
-        result = await self.collection.insert_one(chunk.model_dump(by_alias=True, exclude_unset=True))
-        chunk._id = result.inserted_id
-        
+        async with self.db_client() as session:
+            async with session.begin():
+                session.add(chunk)
+            await session.refresh(chunk)
         return chunk
-    
-    async def get_chunk(self, chunk_id: str):
-        result = await self.collection.find_one({
-                "_id": ObjectId(chunk_id)  # ← لازم تحول الـ string لـ ObjectId 
-                })
             
-        if result is None: 
-            return None
-
-        return DataChunk(**result)
+    async def get_chunk(self, chunk_id: str):
+        
+        async with self.db_client() as session: 
+            result = await session.execute(select(DataChunk).where(DataChunk.chunk_id == chunk_id))
+            chunk = result.scalar_one_or_none()
+            
+        return chunk
     
     async def insert_many_chunks(self, chunks: list, batch_size: int = 100):
         
-        
-        for i in range(0, len(chunks), batch_size):
-            batch = chunks[i: i+batch_size]
-            
-            operations = [
-                InsertOne(chunk.model_dump(by_alias=True, exclude_unset=True))
-                for chunk in batch
-            ]
-            
-            result = await self.collection.bulk_write(operations)
-            
+        async with self.db_client() as session:
+            async with session.begin():
+                for i in range(0, len(chunks), batch_size):
+                    batch = chunks[i: i+batch_size]
+                    session.add_all(batch)
+                    
         return len(chunks)
     
     
     async def delete_chunks_by_project_id(self, project_id: ObjectId):
         
-        result = await self.collection.delete_many({
-            "chunk_project_id": project_id
-        })
-        
-        return result.deleted_count
+        async with self.db_client() as session:
+            async with session.begin():
+                stmt = delete(DataChunk).where(DataChunk.chunk_project_id == project_id)
+                result = await session.execute(stmt)
+        return result.rowcount
+
     
     # pagination كبير فهستعمل ال project بتاعت ال chunks عشان ممكن يكون عدد ال 
     async def get_project_chunks(self, project_id: ObjectId, page_no: int = 1, page_size: int= 50):
         
-        records = await self.collection.find({
-            "chunk_project_id": project_id
-        }).skip(
-            (page_no - 1) * page_size
-        ).limit(page_size).to_list(length = page_size)
-                
-        return [
-            DataChunk(**record)
-            for record in records
-        ]
+        async with self.db_client() as session:
+            stmt = select(DataChunk).where(DataChunk.chunk_project_id == project_id).offset((page_no - 1) * page_size).limit(page_size)
+            
+            result = await session.execute(stmt)
+            records = result.scalars().all()
+        
+        return records

@@ -24,12 +24,12 @@ async def lifespan(app: FastAPI):
     # معينه database هنا بقي انت عاوز تتعامل مع 
     # app.db_client = app.mongo_client[settings.MONGODB_DATABASE]
     
-    postgres_conn = f"postgresql+asyncpg://{settings.POSTGRES_USERNAME}:{settings.POSTGRES_PASSWORD}@{settings.POSTGRES_HOST}:{settings.POSTGRES_PORT}/{settings.POSTGRES_MAIN_DATABASE}"
+    postgres_conn = f"postgresql+asyncpg://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}@{settings.POSTGRES_HOST}:{settings.POSTGRES_PORT}/{settings.POSTGRES_MAIN_DATABASE}"
     
     # database مع ال connection والي مسئول عن engine ده ال 
     app.db_engine = create_async_engine(postgres_conn, echo=True)
 
-    async_session = sessionmaker(
+    app.db_client = sessionmaker(
     bind=app.db_engine,
     class_=AsyncSession,
     expire_on_commit=False,

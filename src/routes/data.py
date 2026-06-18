@@ -9,10 +9,9 @@ import logging
 from src.routes.schemas.data import ProcessRequest
 from src.models.ProjectModel import ProjectModel
 from src.models.ChunkModel import ChunkModel
-from src.models.db_schemes.data_chunk import DataChunk
+from src.models.db_schemes import DataChunk,Asset
 
 from src.models.AssetModel import AssetModel
-from src.models.db_schemes.asset import Asset
 from src.models.enums.AssetTypeEnum import AssetTypeEnum
 import os
 
@@ -25,7 +24,7 @@ data_router = APIRouter(
 
 # deskالي هترفعه وتبدا انها تخرنه علي ال file دي المسئوله عن انها تستقبل ال 
 @data_router.post("/upload/{project_id}")
-async def upload_data(request: Request, project_id: str, file: UploadFile, app_settings: Settings= Depends(get_settings)):
+async def upload_data(request: Request, project_id: int, file: UploadFile, app_settings: Settings= Depends(get_settings)):
     
     #========================================================#
     # mongo في ال projectدي الخاصه بانها تضفلي ال 
@@ -83,10 +82,11 @@ async def upload_data(request: Request, project_id: str, file: UploadFile, app_s
     asset_model = await AssetModel.create_instance(db_client=request.app.db_client)
     
     asset_resource = Asset(
-        asset_project_id = project.id,
+        asset_project_id = project.project_id,
         asset_type= AssetTypeEnum.FILE.value,
         asset_name = file_id,
-        asset_size = os.path.getsize(file_path)
+        asset_size = os.path.getsize(file_path),
+        asset_config={}  # ← ضيف ده
     )
     
     asset_record = await asset_model.create_asset(asset= asset_resource)
@@ -95,8 +95,8 @@ async def upload_data(request: Request, project_id: str, file: UploadFile, app_s
     return JSONResponse(
         content={
             "signal": ResponseSignal.FILE_UPLOAD_SUCCESS.value,
-            "file_id_in_assets": str(asset_record.id),
-            "project_id": str(project.id)
+            "file_id_in_assets": str(asset_record.asset_id),
+            "project_id": str(project.project_id)
         }
     )
     
@@ -106,7 +106,7 @@ async def upload_data(request: Request, project_id: str, file: UploadFile, app_s
 # ProcessRequest الي بيتجي دي بتكون موجوده في data وشكل ال 
 # process_request وانا بستقبلها في ال 
 @data_router.post("/process/{project_id}")
-async def process_endpoint(request: Request, project_id: str, process_request: ProcessRequest):
+async def process_endpoint(request: Request, project_id: int, process_request: ProcessRequest):
 
     # file_id = process_request.file_id
     chunk_size = process_request.chunk_size
@@ -132,7 +132,7 @@ async def process_endpoint(request: Request, project_id: str, process_request: P
     # فعلا file_id بعت user دي عشان لو ال 
     if process_request.file_id:
         asset_record = await asset_model.get_asset_record(
-            asset_project_id=project.id,
+            asset_project_id=project.project_id,
             asset_name=process_request.file_id
         )
         
@@ -144,19 +144,19 @@ async def process_endpoint(request: Request, project_id: str, process_request: P
                 }
             )
         project_files_ids= {
-            asset_record.id: asset_record.asset_name
+            asset_record.asset_id: asset_record.asset_name
         }
         
     # assets دي عشان لو هو مبعتش يبقي اروح اجيب الي موجودين في ال 
     else:        
         # mongo موجود في ال record دي كده هو هيرجع كل 
         project_files = await asset_model.get_all_project_assets(
-            asset_project_id=project.id,
+            asset_project_id=project.project_id,
             asset_type= AssetTypeEnum.FILE.value)
         
         # file_id والي هو بنحطه مكان ال asset_name عشان اجيب بس ال loop وبعد كده هعمل عليه 
         project_files_ids= {
-            record.id: record.asset_name
+            record.asset_id: record.asset_name
             for record in project_files
         }
         
@@ -176,7 +176,7 @@ async def process_endpoint(request: Request, project_id: str, process_request: P
     chunk_model = await ChunkModel.create_instance(db_client=request.app.db_client)
     # for loop دي لازم اشيك عليها الاول قبل ما ادخل علي 
     if do_reset == 1:
-        _ = await chunk_model.delete_chunks_by_project_id(project_id=project.id)
+        _ = await chunk_model.delete_chunks_by_project_id(project_id=project.project_id)
         
     for asset_id, file_id in project_files_ids.items():
         
@@ -206,7 +206,7 @@ async def process_endpoint(request: Request, project_id: str, process_request: P
                 chunk_text= chunk.page_content,
                 chunk_metadata= chunk.metadata,
                 chunk_order= i+1,
-                chunk_project_id=project.id,
+                chunk_project_id=project.project_id,
                 chunk_asset_id= asset_id
             )
             for i, chunk in enumerate(file_chunks)

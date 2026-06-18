@@ -12,7 +12,7 @@ class ProjectController(BaseController):
         # project_id بتاع ال path هنا انا بس بجيب ال 
         project_dir = os.path.join(
             self.files_dir,
-            project_id
+            str(project_id)
         )
         
         # يبقي انشأهfiles ده مش موجود جوه ال project_id وهنا انا بقوله لو ال 
