@@ -6,11 +6,13 @@ import logging
 
 class QdrantDBProvider(VectorDBInterface):
     
-    # اصلا عندي file والي هتكون db_path هو هيكون محتاج ال 
+    # اصلا عندي file والي هتكون db_client هو هيكون محتاج ال 
     # vectors الي هيستعملها عشان يشوف العلاقه ما بين ال distance method وكمان ال 
-    def __init__(self, db_path: str, distance_method: str):
+    def __init__(self, db_client: str, default_vector_size: int = 786,
+                distance_method: str = None,
+                index_threshold: int = 100):
         
-        self.db_path = db_path
+        self.db_client = db_client
         self.distance_method = None
         
         # databaseوببعت من عليه الاوامر ل connect هو الي من خلاله بعمل client بيكون ليها Database اي 
@@ -23,25 +25,25 @@ class QdrantDBProvider(VectorDBInterface):
         elif distance_method == DistanceMethodEnums.DOT.value :
             self.distance_method = models.Distance.DOT
             
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger("uvicorn")
         
     
-    def connect(self):
-        self.client = QdrantClient(path=self.db_path)
+    async def connect(self):
+        self.client = QdrantClient(path=self.db_client)
         
-    def disconnect(self):
+    async def disconnect(self):
         self.client = None
         
-    def is_collection_existed(self, collection_name: str) -> bool:
+    async def is_collection_existed(self, collection_name: str) -> bool:
         return self.client.collection_exists(collection_name=collection_name)
     
-    def list_all_collection(self) -> list[str]:
+    async def list_all_collection(self) -> list[str]:
         return self.client.get_collections()
     
-    def get_collection_info(self, collection_name: str) -> dict:
+    async def get_collection_info(self, collection_name: str) -> dict:
         return self.client.get_collection(collection_name=collection_name)
     
-    def delete_collection(self, collection_name: str) -> dict:
+    async def delete_collection(self, collection_name: str) -> dict:
         
         if not self.is_collection_existed(collection_name=collection_name):
             self.logger.warning(f"Collection {collection_name} does not exist")
@@ -53,13 +55,14 @@ class QdrantDBProvider(VectorDBInterface):
         # تأكد إنها اتمسحت فعلاً
         print(f"Collection still exists after delete: {self.is_collection_existed(collection_name=collection_name)}")
     
-    def create_collection(self, collection_name: str,
+    async def create_collection(self, collection_name: str,
                     embedding_size: int, do_reset: bool = False):
         
         if do_reset:
             _ =  self.delete_collection(collection_name=collection_name)
 
         if not self.is_collection_existed(collection_name=collection_name):
+            self.logger.info(f"Creating new Qdrant Collection: {collection_name}")
             _ = self.client.create_collection(
                 collection_name=collection_name,
                 vectors_config=models.VectorParams(size=embedding_size, distance=self.distance_method),
@@ -68,7 +71,7 @@ class QdrantDBProvider(VectorDBInterface):
         
         return False
     
-    def insert_one(self, collection_name: str, text: str, vector: list,
+    async def insert_one(self, collection_name: str, text: str, vector: list,
                 metadata: dict = None,
                 record_id: str = None):
         
@@ -93,7 +96,7 @@ class QdrantDBProvider(VectorDBInterface):
         
         return True
     
-    def insert_many(self, collection_name: str, texts: list, vectors: list,
+    async def insert_many(self, collection_name: str, texts: list, vectors: list,
                 metadata: list = None,
                 record_ids: list = None, batch_size: int = 50):
     
@@ -135,7 +138,7 @@ class QdrantDBProvider(VectorDBInterface):
         return True
         
         
-    def search_by_vector(self, collection_name: str,
+    async def search_by_vector(self, collection_name: str,
                         vector: list[float], limit: int = 5):
 
         if not self.is_collection_existed(collection_name):
