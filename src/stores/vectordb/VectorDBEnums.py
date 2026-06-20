@@ -16,7 +16,8 @@ class PgVectorTableSchemeEnums(Enum):
     Vector = "vector"
     CHUNK_ID = "chunk_id"
     METADATA = "metadata"
-    _PERFIX = "pgvector"
+    # عليهم access من الي موجودين عندنا عشان نبقي نقدر اننا نعمل table ده هيتحط في اسم اول كل 
+    _PREFIX = "pgvector"
         
 class PGVectorDistanceMethodEnums(Enum):
     COSINE = "vector_cosine_ops"
