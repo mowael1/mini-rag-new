@@ -14,7 +14,7 @@ class QdrantDBProvider(VectorDBInterface):
         
         self.db_client = db_client
         self.distance_method = None
-        
+        self.default_vector_size = default_vector_size
         # databaseوببعت من عليه الاوامر ل connect هو الي من خلاله بعمل client بيكون ليها Database اي 
         # connect بتاعت ال method بس دي مش هنعرفها هنا هي هتكون معرفه جوه ال 
         self.client = None
