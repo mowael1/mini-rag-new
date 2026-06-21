@@ -16,10 +16,13 @@ class PGVectorProvider(VectorDBInterface):
         
         self.db_client = db_client
         self.default_vector_size = default_vector_size
-        self.distance_method = distance_method
         self.index_threshold = index_threshold
-        
-        self.pgvector_table_prefix = PgVectorTableSchemeEnums._PERFIX.value
+        self.distance_method = None
+        if distance_method == DistanceMethodEnums.COSINE.value:
+            self.distance_method = PGVectorDistanceMethodEnums.COSINE.value  # لازم تبقى "vector_cosine_ops"
+        elif distance_method == DistanceMethodEnums.DOT.value:
+            self.distance_method = PGVectorDistanceMethodEnums.DOT.value
+        self.pgvector_table_prefix = PgVectorTableSchemeEnums._PREFIX.value
         self.logger = logging.getLogger("uvicorn")
         
         
@@ -83,7 +86,7 @@ class PGVectorProvider(VectorDBInterface):
             records_count = count_result.scalar()
 
             return {
-                "table_info": dict(table_data),
+                "table_info": dict(table_data._mapping), 
                 "record_count": records_count
             }
 
@@ -126,6 +129,57 @@ class PGVectorProvider(VectorDBInterface):
             return True
 
         return False
+    
+    # ===================== Indexing (lazy) ===================== #
+    async def create_vector_index(self, collection_name: str):
+        """
+        بعد ما عدد الصفوف يعدي threshold معين، نعمل HNSW index
+        """
+        table_name = self.get_collection_name(collection_name)
+
+        async with self.db_client() as session:
+            count_result = await session.execute(sql_text(f"SELECT COUNT(*) FROM {table_name}"))
+            records_count = count_result.scalar()
+
+            if records_count < self.index_threshold:
+                return False
+
+            index_name = f"{table_name}_vector_idx"
+
+            exists_result = await session.execute(
+                sql_text("SELECT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = :index_name)"),
+                {"index_name": index_name}
+            )
+
+            if exists_result.scalar():
+                return False
+
+            self.logger.info(f"START: Creating vector index for collection: {table_name}")
+            
+            await session.execute(sql_text(
+                f"""
+                CREATE INDEX {index_name} ON {table_name}
+                USING {PgVectorIndexTypeEnums.HNSW.value}
+                ({PgVectorTableSchemeEnums.Vector.value} {self.distance_method})
+                """
+            ))
+            await session.commit()   # ← التصحيح: commit مباشر بدل session.begin()
+            
+            self.logger.info(f"END: Creating vector index for collection: {table_name}")
+            return True
+            
+    async def reset_vector_index(self, collection_name: str):
+            table_name = self.get_collection_name(collection_name)
+            index_name = f"{table_name}_vector_idx"
+
+            async with self.db_client() as session:
+                async with session.begin():
+                    await session.execute(sql_text(f"DROP INDEX IF EXISTS {index_name}"))
+
+                await self.create_vector_index(collection_name=collection_name)
+
+            return True
+        
         
     async def insert_one(self, collection_name: str, text: str, vector: list,
                         metadata: dict = None,
@@ -158,6 +212,8 @@ class PGVectorProvider(VectorDBInterface):
                     "chunk_id": record_id,
                     "metadata": json.dumps(metadata) if metadata else None,
                 })
+                
+        await self.create_vector_index(collection_name=collection_name)
         
         return True
         
@@ -209,62 +265,16 @@ class PGVectorProvider(VectorDBInterface):
                             )
                         ]
                         await session.execute(query, batch_params)
+                
 
         except Exception as e:
             self.logger.error(f"Error while inserting batch: {e}")
             return False
+        
+        await self.create_vector_index(collection_name=collection_name)
 
         return True
     
-    
-    # ===================== Indexing (lazy) ===================== #
-    async def create_vector_index(self, collection_name: str):
-        """
-        بعد ما عدد الصفوف يعدي threshold معين، نعمل HNSW index
-        - عمل index على جدول فاضي أو صغير مش مفيد، وممكن يأخر الـ insert من غير فايدة
-        """
-        table_name = self.get_collection_name(collection_name)
-
-        async with self.db_client() as session:
-            count_result = await session.execute(sql_text(f"SELECT COUNT(*) FROM {table_name}"))
-            records_count = count_result.scalar()
-
-            if records_count < self.index_threshold:
-                return False
-
-            index_name = f"{table_name}_vector_idx"
-
-            exists_result = await session.execute(
-                sql_text("SELECT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = :index_name)"),
-                {"index_name": index_name}
-            )
-
-            if exists_result.scalar():
-                return False
-
-            self.logger.info(f"START: Creating vector index for collection: {table_name}")
-            async with session.begin():
-                await session.execute(sql_text(
-                    f"""
-                    CREATE INDEX {index_name} ON {table_name}
-                    USING {PgVectorIndexTypeEnums.HNSW.value}
-                    ({PgVectorTableSchemeEnums.Vector.value} {self.distance_method})
-                    """
-                ))
-            self.logger.info(f"END: Creating vector index for collection: {table_name}")
-            
-    async def reset_vector_index(self, collection_name: str):
-            table_name = self.get_collection_name(collection_name)
-            index_name = f"{table_name}_vector_idx"
-
-            async with self.db_client() as session:
-                async with session.begin():
-                    await session.execute(sql_text(f"DROP INDEX IF EXISTS {index_name}"))
-
-                await self.create_vector_index(collection_name=collection_name)
-
-            return True
-            
 
         
     # ===================== Search ===================== #
@@ -274,12 +284,13 @@ class PGVectorProvider(VectorDBInterface):
 
         if not await self.is_collection_existed(collection_name=collection_name):
             self.logger.error(f"Collection {collection_name} does not exist")
-            return False
+            return []
 
         table_name = self.get_collection_name(collection_name)
 
         # cosine distance operator <=> | L2 distance operator <->
-        distance_operator = "<=>" if self.distance_method == PGVectorDistanceMethodEnums.COSINE.value else "<->"
+        # distance_operator = "<=>" if self.distance_method == PGVectorDistanceMethodEnums.COSINE.value else "<->"
+        distance_operator = "<=>"
 
         async with self.db_client() as session:
             result = await session.execute(sql_text(
@@ -287,7 +298,7 @@ class PGVectorProvider(VectorDBInterface):
                 SELECT {PgVectorTableSchemeEnums.TEXT.value} AS text,
                     1 - ({PgVectorTableSchemeEnums.Vector.value} {distance_operator} (:vector)::vector) AS score
                 FROM {table_name}
-                ORDER BY {PgVectorTableSchemeEnums.Vector.value} {distance_operator} (:vector)::vector DESC
+                ORDER BY {PgVectorTableSchemeEnums.Vector.value} {distance_operator} (:vector)::vector
                 LIMIT :limit
                 """
             ), {"vector": json.dumps(vector), "limit": limit})
