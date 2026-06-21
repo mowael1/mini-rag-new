@@ -2,6 +2,7 @@ from ..LLMInterface import LLMInterface
 from ..LLMEnums import OpenAIEnums
 from openai import OpenAI
 import logging
+from typing import Union
 
 # بتاعته عادي __init__() هيكون ليه ال providers كل واحد بقي من ال 
 class OpenAIProvider(LLMInterface):
@@ -101,7 +102,7 @@ class OpenAIProvider(LLMInterface):
         return response.choices[0].message.content
 
     
-    def embed_text(self, text: str, document_type: str= None):
+    def embed_text(self, text: Union[str, list[str]], document_type: str= None):
 
         # موجود ولا لاclient لازم الاول تشيك هل ال 
         if not self.client:
@@ -128,4 +129,3 @@ class OpenAIProvider(LLMInterface):
         # embedding وخلاص لو عدي بقي يبقي يرجع ال 
         return response.data[0].embedding
     
-        

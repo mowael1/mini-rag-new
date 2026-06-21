@@ -2,6 +2,7 @@ from ..LLMInterface import LLMInterface
 from ..LLMEnums import CoHereEnums ,DocumentTypeEnum
 import cohere
 import logging
+from typing import Union
 
 class CoHereProvider(LLMInterface):
     
@@ -68,7 +69,7 @@ class CoHereProvider(LLMInterface):
         return response.message.content[0].text
     
 
-    def embed_text(self, text: str, document_type: str= None):
+    def embed_text(self, text: Union[str, list[str]], document_type: str= None):
 
         # موجود ولا لاclient لازم الاول تشيك هل ال 
         if not self.client:
@@ -80,6 +81,9 @@ class CoHereProvider(LLMInterface):
             self.logger.error("Embedding model for Cohere was not set")
             return None
         
+        if isinstance(text, str):
+            text = [text]
+        
         input_type = None
         if document_type == DocumentTypeEnum.DOCUMENT.value:
             input_type = CoHereEnums.DOCUMENT.value
@@ -88,7 +92,7 @@ class CoHereProvider(LLMInterface):
 
         response = self.client.embed(
             model=self.embedding_model_id,
-            texts=[self.process_text(text)],
+            texts=[self.process_text(t) for t in text],
             input_type=input_type,
             embedding_types=["float"]
         )
@@ -97,36 +101,33 @@ class CoHereProvider(LLMInterface):
             self.logger.error("Error while embedding text with Cohere")
             return None
         
-        return response.embeddings.float[0]
+        return response.embeddings.float
 
-    # def embed_text(self, text, document_type = None):
-    #     raise NotImplementedError
-
-    def embed_many(self, texts: list[str], document_type: str = None):
+    # def embed_many(self, texts: list[str], document_type: str = None):
         
-        if not self.client:
-            self.logger.error("Cohere client was not set")
-            return None
+    #     if not self.client:
+    #         self.logger.error("Cohere client was not set")
+    #         return None
         
-        if not self.embedding_model_id:
-            self.logger.error("Embedding model for Cohere was not set")
-            return None
+    #     if not self.embedding_model_id:
+    #         self.logger.error("Embedding model for Cohere was not set")
+    #         return None
 
-        input_type = None
-        if document_type == DocumentTypeEnum.DOCUMENT.value:
-            input_type = CoHereEnums.DOCUMENT.value
-        elif document_type == DocumentTypeEnum.QUERY.value:
-            input_type = CoHereEnums.QUERY.value
+    #     input_type = None
+    #     if document_type == DocumentTypeEnum.DOCUMENT.value:
+    #         input_type = CoHereEnums.DOCUMENT.value
+    #     elif document_type == DocumentTypeEnum.QUERY.value:
+    #         input_type = CoHereEnums.QUERY.value
 
-        response = self.client.embed(
-            model=self.embedding_model_id,
-            texts=[self.process_text(text) for text in texts],  # ← كل الـ texts دفعة واحدة
-            input_type=input_type,
-            embedding_types=["float"]
-        )
+    #     response = self.client.embed(
+    #         model=self.embedding_model_id,
+    #         texts=[self.process_text(text) for text in texts],  # ← كل الـ texts دفعة واحدة
+    #         input_type=input_type,
+    #         embedding_types=["float"]
+    #     )
 
-        if not response or not response.embeddings or not response.embeddings.float or len(response.embeddings.float) == 0:
-            self.logger.error("Error while embedding texts with Cohere")
-            return None
+    #     if not response or not response.embeddings or not response.embeddings.float or len(response.embeddings.float) == 0:
+    #         self.logger.error("Error while embedding texts with Cohere")
+    #         return None
 
-        return response.embeddings.float  # ← بترجع list مش واحدة بس
+    #     return response.embeddings.float  # ← بترجع list مش واحدة بس
