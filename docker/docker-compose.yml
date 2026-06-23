@@ -1,38 +1,119 @@
 services:
-  mongodb:
-    image: mongo:7-jammy
 
-    container_name: mongodb
+  #Fastapi Application
 
+  # uvicornبديل ال 
+  # Nginx Service
+
+
+
+  # PostgreSQL (pgvector)
+  pgvector-db:
+    image: pgvector/pgvector:0.8.3-pg18-trixie
+    container_name: pgvector
+    env_file:
+      - ./env/.env.postgres
     ports:
-      - 27007:27017
-
-    volumes:
-      - mongodata:/data/db
-
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
-      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
-      
-    restart: always
-
-  postgres:
-    image: pgvector/pgvector:pg16
-    container_name: postgres
-    ports:
-      - 5432:5432
+      - "5432:5432"
     volumes:
       - pgvector_data:/var/lib/postgresql/data
-    environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
+    restart: always
+    networks:
+      - backend
+    # دي المسئوله انها تقولك هي شغاله ولا لا
+    # فهنا هو كل 5 ثواني بيشوف هو شغال ولا لا
+    # retries ويستني 5 ثواني عشان يرجعله الاجابه لو مفيش حاجه رجعت يبقي هيروح يجرب هدد من المرات والي هو موجود في ال
+    # خلصت وهو مرجعش حاجه يبقي كده ده مش شغال retries لو ال 
+    # يستني الوقت ده قبل ما يجرب الحاجات الي فوق دي كلها start_period وعندك ال 
+    healthcheck:
+      test: ["CMD-SHELL", "gp_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+
+  # Qdrant (VectorDB)
+  qdrant-db:
+    image: qdrant/qdrant:v1.18.2
+    container_name: qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    restart: always
+    networks:
+      - backend
+
+  # metrics دي الخاصه بانها تعرضلي ال 
+  # Prometheus Monitoring
+  prometheus:
+    image: prom/prometheus:v3.5.4
+    container_name: prometheus
+    volumes:
+    # علي مين monitoring ده الي هنكتب فيه احنا هنعمل 
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    depends_on:
+      - fastapi-app
+    restart: always
+    networks:
+      - backend
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+
+  
+
+
+  # بشكل افضل Prometheus الي جايه من ال metrics الي من خلالها هنشوف ال 
+  # visualization اعتبرها دلوقتي انها 
+  # Grafana Dashboard
+  grafana:
+    image: grafana/grafana:11.6.15-ubuntu
+    container_name: grafana
+    env_file:
+      - ./env/.env.grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    restart: always
+    networks:
+      - backend
+
+
+  # show metrics for cpu , gpu , ram
+  # Node Exporter for system metrics
+  node-exporter:
+    image: prom/node-exporter:v1.11.1
+    container_name: node-exporter
+    ports:
+      - "9100:9100"
+
+
+  # عشان يجيب منه شويه احصائياتpostgres علي ال connect ده بيعمل 
+  # PostgreSQL Exporter for Postgres metrics
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.19.1
+    container_name: postgres-exporter
+    ports:
+      - "9187:9187"
+    env_file:
+      - ./env/.env.postgres-exporter
+    # لازم يتاكد الاول ان الحاجه الي تحته دي شغاله عشان ده يشتغل
+    depends_on:
+      - pgvector-db
 
     restart: always
-
-networks: 
-  backend:
-
-volumes:
-  mongodata:
-  pgvector_data:
+    networks:
+      - backend
