@@ -10,6 +10,8 @@ from src.stores.llm.templates.template_parser import TemplateParser
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 
+from src.utils.metrics import setup_metrics
+
 settings = get_settings()
 
 # دي هي دورت حياه التطبيقfunction ان ال python ده بيعرف ال decorator الي 
@@ -71,6 +73,8 @@ async def lifespan(app: FastAPI):
     
 
 app = FastAPI(lifespan=lifespan)
+
+setup_metrics(app=app)
 
 
 app.include_router(base.base_router)
